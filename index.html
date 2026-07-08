@@ -91,18 +91,22 @@
           <span class="lab">ชื่อชีต (แท็บ) — เว้นว่างได้ ใช้ค่าเริ่มต้น</span>
           <input id="cfgSheet" placeholder="เช่น ยา" />
         </label>
+        <label class="f">
+          <span class="lab">Token (ไม่บังคับ — ใส่ให้ตรงกับ Script Property TOKEN ถ้าตั้งไว้)</span>
+          <input id="cfgToken" placeholder="เว้นว่างได้" />
+        </label>
         <div class="row" style="gap:8px">
           <button class="btn btn-primary" id="cfgSave">บันทึกการตั้งค่า</button>
-          <button class="btn btn-ghost" id="cfgTest">ทดสอบส่ง 1 แถว</button>
+          <button class="btn btn-ghost" id="cfgTest">ทดสอบเชื่อมต่อ</button>
         </div>
         <details>
           <summary>วิธีตั้งค่า (ทำครั้งเดียว)</summary>
           <div class="small muted" style="margin-top:8px;line-height:1.7">
-            1) เปิดชีตของคุณ → เมนู <code>ส่วนขยาย</code> → <code>Apps Script</code><br/>
-            2) ลบโค้ดเดิม วางโค้ดไฟล์ <code>med-logger.gs</code> (ที่ผมส่งให้ในแชต) แล้วบันทึก<br/>
-            3) กด <code>ทำให้ใช้งานได้</code> → <code>การทำให้ใช้งานได้ใหม่</code> → ชนิด <b>เว็บแอป</b><br/>
-            &nbsp;&nbsp;&nbsp;ตั้ง “ดำเนินการในนาม: ฉัน”, “ผู้มีสิทธิ์เข้าถึง: <b>ทุกคน</b>”<br/>
-            4) คัดลอก URL ที่ลงท้าย <code>/exec</code> มาวางด้านบน แล้วกดบันทึกการตั้งค่า
+            ฝั่ง Google Sheet:<br/>
+            1) เปิดชีต → <code>ส่วนขยาย</code> → <code>Apps Script</code> วางโค้ด <code>med-logger.gs</code><br/>
+            2) <code>Project Settings</code> → Script Properties → เพิ่ม <code>ANTHROPIC_API_KEY</code> = คีย์ของคุณ<br/>
+            3) <code>Deploy</code> → <b>เว็บแอป</b> → ดำเนินการในนาม: ฉัน, เข้าถึง: <b>ทุกคน</b> → คัดลอก URL <code>/exec</code><br/>
+            ฝั่งเว็บ (GitHub Pages): ดูขั้นตอนในไฟล์ <code>README.md</code>
           </div>
         </details>
       </div>
@@ -177,7 +181,7 @@ const MONO = new Set(["เลขทะเบียนยา","บาร์โค
 
 const $ = (id)=>document.getElementById(id);
 const EMBED_URL = "https://script.google.com/macros/s/AKfycbyiH9Es7y5RfKU31kMaIikz6BTjPCb18WeX_5N1QaNSoomp_MEcT1R6eds_vfPNsoOy/exec";
-let cfg = {url:EMBED_URL, sheet:""};
+let cfg = {url:EMBED_URL, sheet:"", token:""};
 let queue = [];            // ไฟล์ที่รอในคิว
 let currentFile = null;    // ไฟล์ปัจจุบัน (ไว้ลองใหม่)
 let draft = null;          // ข้อมูลที่กำลังตรวจ
@@ -187,10 +191,13 @@ let records = [];          // {data, status}  status: sent|pending|failed
 async function loadCfg(){
   try{ if(window.storage){ const r=await window.storage.get("cfg"); if(r&&r.value) cfg=JSON.parse(r.value);} }catch(e){}
   if(!cfg.url) cfg.url=EMBED_URL;
-  $("cfgUrl").value=cfg.url||""; $("cfgSheet").value=cfg.sheet||""; renderCfgState();
+  $("cfgUrl").value=cfg.url||""; $("cfgSheet").value=cfg.sheet||"";
+  if($("cfgToken")) $("cfgToken").value=cfg.token||"";
+  renderCfgState();
 }
 async function saveCfg(){
   cfg.url=$("cfgUrl").value.trim(); cfg.sheet=$("cfgSheet").value.trim();
+  if($("cfgToken")) cfg.token=$("cfgToken").value.trim();
   try{ if(window.storage) await window.storage.set("cfg", JSON.stringify(cfg)); }catch(e){}
   renderCfgState(); updateSaveBtn();
 }
@@ -227,31 +234,22 @@ async function normalizeImage(file){
   return cv.toDataURL("image/jpeg",0.82).split(",")[1];
 }
 
-// ---------- extract via Claude (in-artifact) ----------
-const PROMPT =
-  "คุณเป็นเครื่องมืออ่านฉลากยา ดึงข้อมูลจากรูปกล่อง/ฉลาก/แผงยานี้ ตอบกลับเป็น JSON object อย่างเดียว "+
-  "ห้ามมีข้อความอื่น ห้ามมี markdown หรือ ```\n"+
-  "ใช้คีย์เหล่านี้พอดี: "+FIELDS.map(f=>`\"${f}\"`).join(", ")+"\n"+
-  "กติกา: ไม่พบหรืออ่านไม่ชัดใส่ \"-\" ; ห้ามเดาตัวเลข(ความแรง/บาร์โค้ด/Lot/เลขทะเบียน/วันที่) ถ้าไม่ชัดใส่ \"-\" แล้วเตือนใน \"หมายเหตุ\" ; "+
-  "วันผลิต/วันหมดอายุ รูปแบบ DD/MM/YYYY ; หมวดหมู่/วิธีใช้ แปลไทยกระชับได้ ; \"ประเภทยา\" ดูจากป้ายบนกล่อง เช่น ยาอันตราย ไม่มีใส่ \"-\".";
-
+// ---------- backend: Apps Script (extract + append) ----------
+// ส่งแบบ simple request (ไม่ตั้ง Content-Type) เพื่อเลี่ยง CORS preflight
+// แล้วอ่าน JSON ที่ตอบกลับได้ (Apps Script redirect ไป googleusercontent ซึ่งมี CORS header)
+async function callGAS(payload){
+  const r=await fetch(cfg.url,{method:"POST",body:JSON.stringify(payload)});
+  const t=await r.text(); let j;
+  try{ j=JSON.parse(t); }
+  catch(e){ throw new Error("อ่านผลจากเซิร์ฟเวอร์ไม่ได้ — ตรวจการ Deploy และสิทธิ์เข้าถึง (ทุกคน)"); }
+  if(!j.ok) throw new Error(j.error||"เซิร์ฟเวอร์แจ้งข้อผิดพลาด");
+  return j;
+}
 async function extract(b64){
-  const resp=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[
-      {role:"user",content:[
-        {type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},
-        {type:"text",text:PROMPT}]}]})
-  });
-  if(resp.status===413) throw new Error("รูปใหญ่เกินไป ลองถ่ายใหม่");
-  const raw=await resp.text(); let j;
-  try{ j=JSON.parse(raw);}catch(e){ throw new Error("ระบบตอบกลับผิดรูปแบบ ลองใหม่"); }
-  if(!resp.ok||j.error) throw new Error((j.error&&j.error.message)||("เชื่อมต่อไม่สำเร็จ ("+resp.status+")"));
-  const text=(j.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").trim();
-  const c=text.replace(/```json|```/g,"").trim(); const a=c.indexOf("{"),z=c.lastIndexOf("}");
-  if(a<0||z<0) throw new Error("อ่านข้อความจากรูปไม่ได้ ลองถ่ายให้ชัดขึ้น");
-  const parsed=JSON.parse(c.slice(a,z+1)); const out={};
-  FIELDS.forEach(f=>out[f]=String(parsed[f]??"-").trim()||"-"); return out;
+  if(!cfgReady()) throw new Error("ยังไม่ได้ตั้งค่า URL เซิร์ฟเวอร์ (Apps Script)");
+  const j=await callGAS({action:"extract", token:cfg.token||"", image:b64, media:"image/jpeg"});
+  const out={}; FIELDS.forEach(f=>out[f]=String((j.record&&j.record[f])??"-").trim()||"-");
+  return out;
 }
 
 // ---------- flow ----------
@@ -302,9 +300,8 @@ function updateSaveBtn(){ $("btnSave").textContent = cfgReady()? "✓ บัน�
 
 // ---------- send to sheet ----------
 async function sendToSheet(dataObj){
-  // no-cors: คำขอจะไปถึงสคริปต์และเขียนแถว แต่เราอ่านผลลัพธ์ไม่ได้ จึงถือว่าสำเร็จถ้าไม่ throw
-  await fetch(cfg.url,{method:"POST",mode:"no-cors",
-    body:JSON.stringify({sheet:cfg.sheet||"", records:[dataObj]})});
+  // อ่านผลลัพธ์จริงจากเซิร์ฟเวอร์ (สำเร็จ/ล้มเหลว)
+  return await callGAS({action:"append", token:cfg.token||"", sheet:cfg.sheet||"", records:[dataObj]});
 }
 
 async function saveRecord(){
@@ -388,8 +385,10 @@ async function testSend(){
   saveCfg();
   const sample={}; ALL_FIELDS.forEach(f=>sample[f]="-"); sample[DATE_FIELD]=today();
   sample["ตัวยาสำคัญ"]="__TEST__"; sample["หมายเหตุ"]="ทดสอบการเชื่อมต่อ";
-  try{ await sendToSheet(sample); alert("ส่งทดสอบแล้ว ✓ ลองเปิดชีตดูว่ามีแถว __TEST__ เพิ่มไหม (ลบออกได้)"); }
-  catch(e){ alert("ส่งไม่สำเร็จ: "+e.message); }
+  try{
+    const j=await sendToSheet(sample);
+    alert("เชื่อมต่อสำเร็จ ✓ เพิ่มแถวทดสอบในแท็บ \""+(j.sheet||cfg.sheet||"ยา")+"\" (รวม "+(j.total!=null?j.total:"?")+" แถว) — ลบแถว __TEST__ ออกได้");
+  }catch(e){ alert("เชื่อมต่อไม่สำเร็จ: "+e.message); }
 }
 
 // ---------- events ----------
