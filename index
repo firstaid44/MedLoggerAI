@@ -1,0 +1,411 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{
+    --brand:#C0006B; --brand-soft:#FCE7F0; --ink:#1f1b1a; --muted:#78716c;
+    --line:#e7e5e4; --bg:#f5f5f4; --card:#ffffff; --ok:#15803d; --warn:#b45309; --err:#e11d48;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:ui-sans-serif,system-ui,"Noto Sans Thai","Segoe UI",sans-serif;}
+  .wrap{max-width:720px;margin:0 auto;padding:16px 14px 96px;}
+  .row{display:flex;gap:12px;align-items:center}
+  h1{font-size:20px;margin:0;line-height:1.2}
+  .sub{color:var(--muted);font-size:13px;margin-top:2px}
+  .logo{width:44px;height:44px;border-radius:12px;background:var(--brand);color:#fff;
+    display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-size:22px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    box-shadow:0 1px 2px rgba(0,0,0,.04);margin-top:16px}
+  .card .bar{height:6px;background:var(--brand)}
+  .pad{padding:16px}
+  .btn{border:0;border-radius:12px;padding:11px 14px;font-size:15px;font-weight:600;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;gap:8px}
+  .btn-primary{background:var(--brand);color:#fff}
+  .btn-ghost{background:#f1f0ef;color:#57534e}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-block{width:100%}
+  .pick{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .pick button{flex-direction:column;gap:6px;border:2px dashed var(--line);background:#fafafa;
+    border-radius:12px;padding:22px 8px;color:#57534e;font-weight:600;cursor:pointer}
+  .pick .ic{font-size:26px}
+  label.f{display:block;margin-bottom:10px}
+  label.f .lab{font-size:12px;color:var(--muted);margin-bottom:4px;display:block}
+  input,textarea{width:100%;border:1px solid #d6d3d1;border-radius:10px;padding:9px 11px;font:inherit;
+    background:#fff;color:var(--ink)}
+  input:focus,textarea:focus{outline:2px solid var(--brand);border-color:var(--brand)}
+  textarea{resize:vertical;min-height:44px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .grid2 .full{grid-column:1/-1}
+  .muted{color:var(--muted)}
+  .small{font-size:12px}
+  .head{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--brand-soft);color:var(--brand);font-weight:700}
+  .status{font-size:14px;font-weight:600;display:flex;gap:8px;align-items:center}
+  .spin{width:16px;height:16px;border:2px solid #ddd;border-top-color:var(--brand);border-radius:50%;
+    animation:sp .8s linear infinite;display:inline-block}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .thumb{width:104px;height:104px;border-radius:10px;object-fit:cover;border:1px solid var(--line);background:#fafafa}
+  .pill{border-radius:999px;padding:2px 9px;font-size:11px;font-weight:700}
+  .pill-brand{background:var(--brand);color:#fff}
+  .pill-soft{background:var(--brand-soft);color:var(--brand)}
+  .pill-warn{background:#fef3c7;color:var(--warn)}
+  .pill-ok{background:#dcfce7;color:var(--ok)}
+  .pill-err{background:#ffe4e6;color:var(--err)}
+  .rec{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:8px;background:#fff;display:flex;gap:10px}
+  .rec .n{width:26px;height:26px;border-radius:7px;background:var(--brand);color:#fff;font-weight:700;
+    font-size:12px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .kv{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;font-size:12px;color:var(--muted);margin-top:4px}
+  .mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,Menlo,Consolas,monospace;color:#44403c}
+  .empty{border:1px dashed var(--line);border-radius:14px;padding:34px 14px;text-align:center;color:#a8a29e;font-size:14px;background:#fff}
+  .foot{margin-top:18px;text-align:center;color:#a8a29e;font-size:12px}
+  .link{color:var(--brand);text-decoration:none;font-weight:600}
+  .toggle{cursor:pointer;color:var(--brand);font-weight:600;font-size:13px;user-select:none}
+  details{margin-top:6px}
+  summary{cursor:pointer;color:var(--brand);font-weight:600;font-size:13px}
+  code{background:#f1f0ef;padding:1px 5px;border-radius:5px;font-size:12px}
+  .warnbox{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;padding:10px 12px;font-size:13px;margin-top:10px}
+  .hide{display:none !important}
+</style>
+
+<div class="wrap">
+  <div class="row">
+    <div class="logo">℞</div>
+    <div>
+      <h1>บันทึกยาจากรูป → Google Sheet</h1>
+      <div class="sub">ถ่ายกล่องยา → ดึงข้อมูลอัตโนมัติ → ส่งเข้าชีต</div>
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div class="card">
+    <div class="pad">
+      <div class="row" style="justify-content:space-between">
+        <strong id="cfgTitle">การเชื่อมต่อ Google Sheet</strong>
+        <span id="cfgState" class="pill pill-err">ยังไม่ตั้งค่า</span>
+      </div>
+      <div id="cfgBody" style="margin-top:12px">
+        <label class="f">
+          <span class="lab">Apps Script Web App URL (ลงท้ายด้วย /exec)</span>
+          <input id="cfgUrl" placeholder="https://script.google.com/macros/s/..../exec" />
+        </label>
+        <label class="f">
+          <span class="lab">ชื่อชีต (แท็บ) — เว้นว่างได้ ใช้ค่าเริ่มต้น</span>
+          <input id="cfgSheet" placeholder="เช่น ยา" />
+        </label>
+        <div class="row" style="gap:8px">
+          <button class="btn btn-primary" id="cfgSave">บันทึกการตั้งค่า</button>
+          <button class="btn btn-ghost" id="cfgTest">ทดสอบส่ง 1 แถว</button>
+        </div>
+        <details>
+          <summary>วิธีตั้งค่า (ทำครั้งเดียว)</summary>
+          <div class="small muted" style="margin-top:8px;line-height:1.7">
+            1) เปิดชีตของคุณ → เมนู <code>ส่วนขยาย</code> → <code>Apps Script</code><br/>
+            2) ลบโค้ดเดิม วางโค้ดไฟล์ <code>med-logger.gs</code> (ที่ผมส่งให้ในแชต) แล้วบันทึก<br/>
+            3) กด <code>ทำให้ใช้งานได้</code> → <code>การทำให้ใช้งานได้ใหม่</code> → ชนิด <b>เว็บแอป</b><br/>
+            &nbsp;&nbsp;&nbsp;ตั้ง “ดำเนินการในนาม: ฉัน”, “ผู้มีสิทธิ์เข้าถึง: <b>ทุกคน</b>”<br/>
+            4) คัดลอก URL ที่ลงท้าย <code>/exec</code> มาวางด้านบน แล้วกดบันทึกการตั้งค่า
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAPTURE -->
+  <div class="card">
+    <div class="bar"></div>
+    <div class="pad">
+      <div id="pickArea" class="pick">
+        <button id="btnCam"><span class="ic">📷</span>ถ่ายรูป</button>
+        <button id="btnGal"><span class="ic">🖼️</span>เลือกจากคลัง</button>
+      </div>
+      <div class="small muted" id="pickHint" style="text-align:center;margin-top:10px">
+        เลือกจากคลังได้หลายรูปพร้อมกัน — ระบบจะให้ตรวจทานทีละรูป
+      </div>
+
+      <div id="previewArea" class="row hide" style="gap:12px;align-items:flex-start">
+        <img id="thumb" class="thumb" alt="รูปยา" />
+        <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+          <div id="statusLine" class="status"></div>
+          <div id="queueLine" class="small"></div>
+          <div class="row" style="gap:8px">
+            <button class="btn btn-ghost small" id="btnRetry" style="display:none">↻ ลองอ่านอีกครั้ง</button>
+            <button class="btn btn-ghost small" id="btnReset">↺ เริ่มใหม่</button>
+          </div>
+        </div>
+      </div>
+
+      <input id="inCam" type="file" accept="image/*" capture="environment" class="hide" />
+      <input id="inGal" type="file" accept="image/*" multiple class="hide" />
+    </div>
+  </div>
+
+  <!-- REVIEW -->
+  <div id="reviewCard" class="card hide">
+    <div class="head">✎ ตรวจทานข้อมูล <span class="small muted" style="margin-left:auto;font-weight:400">ช่องที่เป็น “-” คืออ่านไม่ได้/ไม่มี ปรับแก้ได้</span></div>
+    <div class="pad">
+      <div id="formGrid" class="grid2"></div>
+      <div class="row" style="gap:8px;margin-top:14px">
+        <button class="btn btn-primary" id="btnSave" style="flex:1">✓ บันทึกลง Google Sheet</button>
+        <button class="btn btn-ghost" id="btnSkip">ข้าม</button>
+      </div>
+      <div class="small muted" style="margin-top:8px">ถ้ายังไม่ได้ตั้งค่าชีต จะเก็บไว้ในรายการด้านล่างและส่งภายหลังได้</div>
+    </div>
+  </div>
+
+  <!-- LIST -->
+  <div style="margin-top:22px">
+    <div class="row" style="gap:8px">
+      <strong>รายการที่บันทึก</strong>
+      <span id="count" class="pill pill-brand">0</span>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn btn-ghost small" id="btnResend" style="display:none">ส่งที่ค้างอีกครั้ง</button>
+        <button class="btn btn-ghost small" id="btnCsv" style="display:none">CSV</button>
+      </div>
+    </div>
+    <div id="list"></div>
+  </div>
+
+  <div class="foot">เครื่องมือช่วยจดข้อมูลบนฉลากเท่านั้น • ตัวเลขสำคัญควรตรวจกับกล่องจริงก่อนใช้งาน</div>
+</div>
+
+<script>
+const FIELDS = ["ชื่อการค้า","ตัวยาสำคัญ","ความแรง","หมวดหมู่/สรรพคุณ","วิธีใช้/ขนาดรับประทาน",
+  "ประเภทยา","เลขทะเบียนยา","บาร์โค้ด","Lot/Control No.","วันผลิต","วันหมดอายุ","หมายเหตุ"];
+const DATE_FIELD = "วันที่บันทึก";
+const ALL_FIELDS = [DATE_FIELD, ...FIELDS];
+const LONG = new Set(["หมวดหมู่/สรรพคุณ","วิธีใช้/ขนาดรับประทาน","หมายเหตุ"]);
+const MONO = new Set(["เลขทะเบียนยา","บาร์โค้ด","Lot/Control No.","วันผลิต","วันหมดอายุ","วันที่บันทึก"]);
+
+const $ = (id)=>document.getElementById(id);
+const EMBED_URL = "https://script.google.com/macros/s/AKfycbyiH9Es7y5RfKU31kMaIikz6BTjPCb18WeX_5N1QaNSoomp_MEcT1R6eds_vfPNsoOy/exec";
+let cfg = {url:EMBED_URL, sheet:""};
+let queue = [];            // ไฟล์ที่รอในคิว
+let currentFile = null;    // ไฟล์ปัจจุบัน (ไว้ลองใหม่)
+let draft = null;          // ข้อมูลที่กำลังตรวจ
+let records = [];          // {data, status}  status: sent|pending|failed
+
+// ---------- storage (optional) ----------
+async function loadCfg(){
+  try{ if(window.storage){ const r=await window.storage.get("cfg"); if(r&&r.value) cfg=JSON.parse(r.value);} }catch(e){}
+  if(!cfg.url) cfg.url=EMBED_URL;
+  $("cfgUrl").value=cfg.url||""; $("cfgSheet").value=cfg.sheet||""; renderCfgState();
+}
+async function saveCfg(){
+  cfg.url=$("cfgUrl").value.trim(); cfg.sheet=$("cfgSheet").value.trim();
+  try{ if(window.storage) await window.storage.set("cfg", JSON.stringify(cfg)); }catch(e){}
+  renderCfgState(); updateSaveBtn();
+}
+function renderCfgState(){
+  const ok=/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(cfg.url);
+  const el=$("cfgState");
+  if(ok){ el.className="pill pill-ok"; el.textContent = cfg.sheet? ("พร้อม • "+cfg.sheet):"พร้อม"; }
+  else { el.className="pill pill-err"; el.textContent="ยังไม่ตั้งค่า"; }
+  return ok;
+}
+function cfgReady(){ return /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(cfg.url); }
+
+// ---------- image ----------
+function today(){ const d=new Date(),p=n=>String(n).padStart(2,"0");
+  return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()}`; }
+
+function loadImg(blob){ return new Promise((res,rej)=>{
+  const url=URL.createObjectURL(blob), im=new Image();
+  im.onload=()=>{URL.revokeObjectURL(url);res(im);};
+  im.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("decode"));};
+  im.src=url;
+});}
+async function decodeImage(blob){
+  if(typeof createImageBitmap==="function"){ try{ return await createImageBitmap(blob);}catch(e){} }
+  try{ return await loadImg(blob);}catch(e){ return null; }
+}
+async function normalizeImage(file){
+  let src=await decodeImage(file);
+  if(!src) throw new Error("เปิดรูปไม่สำเร็จ ลองถ่ายใหม่ หรือใช้ไฟล์ JPG/PNG • iPhone: ตั้งค่า>กล้อง>รูปแบบ>ประสิทธิภาพสูงสุด");
+  const maxDim=1568; let w=src.width,h=src.height;
+  const s=Math.min(1,maxDim/Math.max(w,h)); w=Math.round(w*s); h=Math.round(h*s);
+  const cv=document.createElement("canvas"); cv.width=w; cv.height=h;
+  cv.getContext("2d").drawImage(src,0,0,w,h);
+  return cv.toDataURL("image/jpeg",0.82).split(",")[1];
+}
+
+// ---------- extract via Claude (in-artifact) ----------
+const PROMPT =
+  "คุณเป็นเครื่องมืออ่านฉลากยา ดึงข้อมูลจากรูปกล่อง/ฉลาก/แผงยานี้ ตอบกลับเป็น JSON object อย่างเดียว "+
+  "ห้ามมีข้อความอื่น ห้ามมี markdown หรือ ```\n"+
+  "ใช้คีย์เหล่านี้พอดี: "+FIELDS.map(f=>`\"${f}\"`).join(", ")+"\n"+
+  "กติกา: ไม่พบหรืออ่านไม่ชัดใส่ \"-\" ; ห้ามเดาตัวเลข(ความแรง/บาร์โค้ด/Lot/เลขทะเบียน/วันที่) ถ้าไม่ชัดใส่ \"-\" แล้วเตือนใน \"หมายเหตุ\" ; "+
+  "วันผลิต/วันหมดอายุ รูปแบบ DD/MM/YYYY ; หมวดหมู่/วิธีใช้ แปลไทยกระชับได้ ; \"ประเภทยา\" ดูจากป้ายบนกล่อง เช่น ยาอันตราย ไม่มีใส่ \"-\".";
+
+async function extract(b64){
+  const resp=await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[
+      {role:"user",content:[
+        {type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},
+        {type:"text",text:PROMPT}]}]})
+  });
+  if(resp.status===413) throw new Error("รูปใหญ่เกินไป ลองถ่ายใหม่");
+  const raw=await resp.text(); let j;
+  try{ j=JSON.parse(raw);}catch(e){ throw new Error("ระบบตอบกลับผิดรูปแบบ ลองใหม่"); }
+  if(!resp.ok||j.error) throw new Error((j.error&&j.error.message)||("เชื่อมต่อไม่สำเร็จ ("+resp.status+")"));
+  const text=(j.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").trim();
+  const c=text.replace(/```json|```/g,"").trim(); const a=c.indexOf("{"),z=c.lastIndexOf("}");
+  if(a<0||z<0) throw new Error("อ่านข้อความจากรูปไม่ได้ ลองถ่ายให้ชัดขึ้น");
+  const parsed=JSON.parse(c.slice(a,z+1)); const out={};
+  FIELDS.forEach(f=>out[f]=String(parsed[f]??"-").trim()||"-"); return out;
+}
+
+// ---------- flow ----------
+function setStatus(html){ $("statusLine").innerHTML=html; }
+function showPreview(on){ $("previewArea").classList.toggle("hide",!on); $("pickArea").classList.toggle("hide",on); $("pickHint").classList.toggle("hide",on); }
+
+function startBatch(files){ files=[...files]; if(!files.length) return; queue=files.slice(1); processFile(files[0]); }
+
+async function processFile(file){
+  currentFile=file; showPreview(true);
+  $("thumb").src=URL.createObjectURL(file);
+  $("btnRetry").style.display="none";
+  $("reviewCard").classList.add("hide");
+  $("queueLine").textContent = queue.length? ("เหลืออีก "+queue.length+" รูปในคิว"):"";
+  try{
+    setStatus('<span class="spin"></span> กำลังอ่านข้อมูลจากรูป…');
+    const b64=await normalizeImage(file);
+    $("thumb").src="data:image/jpeg;base64,"+b64;
+    const data=await extract(b64);
+    draft=Object.assign({[DATE_FIELD]:today()}, data);
+    setStatus('<span style="color:var(--ok)">✓ อ่านเสร็จ — ตรวจแก้ก่อนบันทึก</span>');
+    renderForm();
+  }catch(err){
+    setStatus('<span style="color:var(--err)">⚠ '+(err.message||"อ่านไม่สำเร็จ")+'</span>');
+    $("btnRetry").style.display = currentFile? "inline-flex":"none";
+  }
+}
+function advance(){ if(queue.length){ const n=queue.shift(); processFile(n);} else resetCapture(); }
+function resetCapture(){
+  queue=[]; currentFile=null; draft=null; showPreview(false);
+  $("reviewCard").classList.add("hide"); $("inCam").value=""; $("inGal").value="";
+}
+
+function renderForm(){
+  const g=$("formGrid"); g.innerHTML="";
+  ALL_FIELDS.forEach(f=>{
+    const wrap=document.createElement("label"); wrap.className="f"+(LONG.has(f)?" full":"");
+    const lab=document.createElement("span"); lab.className="lab"; lab.textContent=f;
+    const inp=LONG.has(f)?document.createElement("textarea"):document.createElement("input");
+    inp.value=draft[f]||""; if(MONO.has(f)) inp.className="mono";
+    inp.addEventListener("input",e=>draft[f]=e.target.value);
+    wrap.appendChild(lab); wrap.appendChild(inp); g.appendChild(wrap);
+  });
+  $("reviewCard").classList.remove("hide");
+  updateSaveBtn();
+}
+function updateSaveBtn(){ $("btnSave").textContent = cfgReady()? "✓ บันทึกลง Google Sheet":"✓ เพิ่มในรายการ (ยังไม่ตั้งค่าชีต)"; }
+
+// ---------- send to sheet ----------
+async function sendToSheet(dataObj){
+  // no-cors: คำขอจะไปถึงสคริปต์และเขียนแถว แต่เราอ่านผลลัพธ์ไม่ได้ จึงถือว่าสำเร็จถ้าไม่ throw
+  await fetch(cfg.url,{method:"POST",mode:"no-cors",
+    body:JSON.stringify({sheet:cfg.sheet||"", records:[dataObj]})});
+}
+
+async function saveRecord(){
+  const data=Object.assign({},draft);
+  const rec={data, status: cfgReady()?"sending":"pending"};
+  records.push(rec); renderList();
+  const idx=records.length-1;
+  if(cfgReady()){
+    try{ await sendToSheet(data); records[idx].status="sent"; }
+    catch(e){ records[idx].status="failed"; }
+    renderList();
+  }
+  advance();
+}
+
+async function resendPending(){
+  if(!cfgReady()){ alert("ยังไม่ได้ตั้งค่า Google Sheet"); return; }
+  for(let i=0;i<records.length;i++){
+    if(records[i].status==="pending"||records[i].status==="failed"){
+      records[i].status="sending"; renderList();
+      try{ await sendToSheet(records[i].data); records[i].status="sent"; }
+      catch(e){ records[i].status="failed"; }
+      renderList();
+    }
+  }
+}
+
+// ---------- render list ----------
+function statusPill(s){
+  if(s==="sent") return '<span class="pill pill-ok">✓ ส่งแล้ว</span>';
+  if(s==="sending") return '<span class="pill pill-soft">กำลังส่ง…</span>';
+  if(s==="failed") return '<span class="pill pill-err">ส่งไม่สำเร็จ</span>';
+  return '<span class="pill pill-warn">รอส่ง</span>';
+}
+function renderList(){
+  $("count").textContent=records.length;
+  const hasPending=records.some(r=>r.status==="pending"||r.status==="failed");
+  $("btnResend").style.display = hasPending? "inline-flex":"none";
+  $("btnCsv").style.display = records.length? "inline-flex":"none";
+  const L=$("list");
+  if(!records.length){ L.innerHTML='<div class="empty">ยังไม่มีรายการ — ถ่ายรูปกล่องยาด้านบนเพื่อเริ่ม</div>'; return; }
+  L.innerHTML="";
+  records.forEach((r,i)=>{
+    const d=r.data;
+    const flag = (d["หมายเหตุ"]&&d["หมายเหตุ"]!=="-") || ["ความแรง","วันหมดอายุ","Lot/Control No."].some(f=>!d[f]||d[f]==="-");
+    const el=document.createElement("div"); el.className="rec";
+    el.innerHTML=
+      '<div class="n">'+(i+1)+'</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div class="row" style="gap:6px;flex-wrap:wrap">'+
+          '<b>'+esc(d["ตัวยาสำคัญ"]||"-")+'</b>'+
+          '<span class="muted">'+esc(d["ความแรง"]||"")+'</span>'+
+          (d["ประเภทยา"]&&d["ประเภทยา"]!=="-"?'<span class="pill pill-soft">'+esc(d["ประเภทยา"])+'</span>':'')+
+          (flag?'<span class="pill pill-warn">⚠ ตรวจซ้ำ</span>':'')+
+          statusPill(r.status)+
+        '</div>'+
+        '<div class="kv">'+
+          '<span>ทะเบียน: <span class="mono">'+esc(d["เลขทะเบียนยา"])+'</span></span>'+
+          '<span>หมดอายุ: <span class="mono">'+esc(d["วันหมดอายุ"])+'</span></span>'+
+          '<span>Lot: <span class="mono">'+esc(d["Lot/Control No."])+'</span></span>'+
+          '<span>บาร์โค้ด: <span class="mono">'+esc(d["บาร์โค้ด"])+'</span></span>'+
+        '</div>'+
+      '</div>';
+    L.appendChild(el);
+  });
+}
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+function exportCsv(){
+  const rows=[ALL_FIELDS.join(",")];
+  records.forEach(r=>rows.push(ALL_FIELDS.map(f=>{
+    let v=(r.data[f]??"-")+""; if(/[",\n]/.test(v)) v='"'+v.replace(/"/g,'""')+'"'; return v;
+  }).join(",")));
+  const blob=new Blob(["\uFEFF"+rows.join("\r\n")],{type:"text/csv;charset=utf-8;"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="ทะเบียนยา.csv"; a.click();
+}
+
+// ---------- test send ----------
+async function testSend(){
+  if(!renderCfgState()){ alert("URL ยังไม่ถูกต้อง (ต้องลงท้าย /exec)"); return; }
+  saveCfg();
+  const sample={}; ALL_FIELDS.forEach(f=>sample[f]="-"); sample[DATE_FIELD]=today();
+  sample["ตัวยาสำคัญ"]="__TEST__"; sample["หมายเหตุ"]="ทดสอบการเชื่อมต่อ";
+  try{ await sendToSheet(sample); alert("ส่งทดสอบแล้ว ✓ ลองเปิดชีตดูว่ามีแถว __TEST__ เพิ่มไหม (ลบออกได้)"); }
+  catch(e){ alert("ส่งไม่สำเร็จ: "+e.message); }
+}
+
+// ---------- events ----------
+$("btnCam").onclick=()=>$("inCam").click();
+$("btnGal").onclick=()=>$("inGal").click();
+$("inCam").onchange=e=>startBatch(e.target.files);
+$("inGal").onchange=e=>startBatch(e.target.files);
+$("btnReset").onclick=resetCapture;
+$("btnRetry").onclick=()=>currentFile&&processFile(currentFile);
+$("btnSave").onclick=saveRecord;
+$("btnSkip").onclick=advance;
+$("cfgSave").onclick=()=>{ saveCfg(); };
+$("cfgTest").onclick=testSend;
+$("btnResend").onclick=resendPending;
+$("btnCsv").onclick=exportCsv;
+$("cfgUrl").addEventListener("input",()=>{cfg.url=$("cfgUrl").value.trim();renderCfgState();updateSaveBtn();});
+
+loadCfg(); renderList();
+</script>
