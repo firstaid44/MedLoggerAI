@@ -231,7 +231,7 @@ async function normalizeImage(file){
   const s=Math.min(1,maxDim/Math.max(w,h)); w=Math.round(w*s); h=Math.round(h*s);
   const cv=document.createElement("canvas"); cv.width=w; cv.height=h;
   cv.getContext("2d").drawImage(src,0,0,w,h);
-  return cv.toDataURL("image/jpeg",0.82).split(",")[1];
+  return cv.toDataURL("image/jpeg",0.94).split(",")[1];
 }
 
 // ---------- backend: Apps Script (extract + append) ----------
